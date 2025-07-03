@@ -55,7 +55,7 @@ export default function MenuScreen() {
 
         {/* BrewBot */}
         <OutlinedLabel text="BrewBot" />
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/assistant')}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/brewbot')}>
           <Image source={require('../assets/ui/brewbot.png')} style={styles.icon} />
         </TouchableOpacity>
 
