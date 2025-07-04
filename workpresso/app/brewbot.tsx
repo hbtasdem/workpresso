@@ -19,9 +19,10 @@ export default function BrewBotScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const addTask = async () => {
-    if (!taskText.trim()) return;
+  if (!taskText.trim()) return;
 
-    const metadata = await getTaskMetadata(taskText);
+  try {
+    const metadata = await getTaskMetadata(taskText); 
 
     const newTask: Task = {
       id: uuid.v4().toString(),
@@ -34,7 +35,10 @@ export default function BrewBotScreen() {
 
     setTasks((prev) => [...prev, newTask]);
     setTaskText('');
-  };
+  } catch (error) {
+    console.error('Failed to fetch metadata for task:', error);
+  }
+};
 
   const renderTask = ({ item }: { item: Task }) => (
     <View style={styles.taskRow}>

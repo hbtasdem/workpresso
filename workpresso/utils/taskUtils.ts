@@ -1,24 +1,14 @@
-
-// export const estimateBrewTime = (taskName: string): number => {
-//   const name = taskName.toLowerCase();
-
-//   // Rule-based time estimates
-//   if (name.includes('email') || name.includes('call') || name.includes('reply')) return 15;     // Espresso
-//   if (name.includes('study') || name.includes('project') || name.includes('research')) return 45; // Cold brew
-//   if (name.includes('write') || name.includes('organize') || name.includes('clean')) return 25;   // Drip
-
-//   // Default to medium focus
-//   return 25;
-// };
-
 import Constants from 'expo-constants';
+
 export type TaskMetadata = {
   estimatedBrewTime: number;
   isPriority: boolean;
 };
 
 export const getTaskMetadata = async (taskName: string): Promise<TaskMetadata> => {
-    const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiKey;
+  const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiKey;
+
+  console.log('[TASK INPUT]', taskName); // STEP 1: Log the input
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -33,11 +23,11 @@ export const getTaskMetadata = async (taskName: string): Promise<TaskMetadata> =
           {
             role: 'user',
             content: `You are a smart assistant in a cozy coffee-themed productivity app.
-                        Based on this task: "${taskName}", return a JSON object with:
-                        1. estimatedBrewTime (15, 25, or 45 only), and
-                        2. isPriority (true or false).
-                        Keep your response JSON only, like:
-                        { "estimatedBrewTime": 25, "isPriority": false }
+                      Based on this task: "${taskName}", return a JSON object with:
+                      1. estimatedBrewTime (15, 25, or 45 only), and
+                      2. isPriority (true or false).
+                      Keep your response JSON only, like:
+                      { "estimatedBrewTime": 25, "isPriority": false }
             `.trim(),
           },
         ],
@@ -46,24 +36,21 @@ export const getTaskMetadata = async (taskName: string): Promise<TaskMetadata> =
     });
 
     const data = await response.json();
+
+    console.log('[OPENAI RESPONSE]', data); // STEP 2: Log the entire response
+
     const content = data.choices?.[0]?.message?.content || '{}';
+
+    console.log('[PARSED CONTENT]', content); // STEP 3: Log what you're about to parse
+    console.log('[OPENAI KEY]', OPENAI_API_KEY);
+
     return JSON.parse(content);
   } catch (error) {
-    console.error('AI failed, using fallback values:', error);
+    console.error('[AI FALLBACK]', error); // STEP 4: Log any errors
 
-    // fallback
     return {
       estimatedBrewTime: 25,
       isPriority: false,
     };
   }
-};
-
-// sort tasks by priority
-export const sortTasksByPriority = (tasks: any[]) => {
-  return tasks.sort((a, b) => {
-    if (a.isPriority && !b.isPriority) return -1;
-    if (!a.isPriority && b.isPriority) return 1;
-    return 0;
-  });
 };
