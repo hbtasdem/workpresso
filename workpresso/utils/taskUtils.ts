@@ -1,6 +1,6 @@
 // //taskUtils.ts
 // taskUtils.ts
-import Constants from 'expo-constants';
+import { generateText } from '../api/OpenAIService';
 
 export type TaskMetadata = {
   estimatedBrewTime: 15 | 25 | 45;
@@ -8,123 +8,160 @@ export type TaskMetadata = {
 };
 
 export const getTaskMetadata = async (taskName: string): Promise<TaskMetadata> => {
-  const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiKey;
-  const ASSISTANT_ID = Constants.expoConfig?.extra?.openaiAssistantId;
-
   try {
     console.log('[TASK INPUT]', taskName);
 
-    // Step 1: Create thread
-    const threadRes = await fetch('https://api.openai.com/v1/threads', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-    });
+    const prompt = `
+You are a smart productivity assistant inside a cozy coffee-themed Pomodoro app.
+Given the task: "${taskName}", respond ONLY with a valid JSON object containing:
+1. estimatedBrewTime (either 15, 25, or 45)
+2. isPriority (true or false)
 
-    const thread = await threadRes.json();
-    console.log('[THREAD RESPONSE]', thread);
+Respond only with JSON. No extra explanation or greeting. Example:
+{ "estimatedBrewTime": 25, "isPriority": false }
+    `.trim();
 
-    const threadId = thread?.id;
-    if (!threadId) throw new Error('Thread creation failed');
+    const raw = await generateText(prompt);
+    console.log('[OPENAI RAW]', raw);
 
-    // Step 2: Add message
-    await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-      body: JSON.stringify({
-        role: 'user',
-        content: taskName,
-      }),
-    });
-
-    // Step 3: Run assistant
-    const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-        'OpenAI-Beta': 'assistants=v2',
-      },
-      body: JSON.stringify({
-        assistant_id: ASSISTANT_ID,
-      }),
-    });
-
-    const run = await runRes.json();
-    const runId = run?.id;
-    if (!runId) throw new Error('Run creation failed');
-
-    // Step 4: Poll for completion
-    let status = 'queued';
-    let retries = 0;
-    const maxRetries = 10;
-
-    while (status !== 'completed' && retries < maxRetries) {
-      const runCheckRes = await fetch(
-        `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2',
-          },
-        }
-      );
-
-      const runCheck = await runCheckRes.json();
-      status = runCheck?.status || 'undefined';
-      console.log('[ASSISTANT STATUS]', status);
-
-      if (status !== 'completed') {
-        await new Promise((res) => setTimeout(res, 1000));
-        retries++;
-      }
-    }
-
-    // Step 5: Get assistant message
-    const messagesRes = await fetch(
-      `https://api.openai.com/v1/threads/${threadId}/messages`,
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'OpenAI-Beta': 'assistants=v2',
-        },
-      }
-    );
-
-    const messagesData = await messagesRes.json();
-    console.log('[MESSAGES RESPONSE]', messagesData);
-
-    if (!messagesData?.data || messagesData.data.length === 0) {
-      throw new Error('No assistant message found');
-    }
-
-    const assistantMessage = messagesData.data.find(
-      (msg: any) => msg.role === 'assistant'
-    );
-
-    const rawContent = assistantMessage?.content?.[0]?.text?.value;
-    console.log('[OPENAI RAW]', rawContent);
-
-    if (!rawContent) throw new Error('No content in assistant response.');
-
-    const parsed: TaskMetadata = JSON.parse(rawContent);
+    const parsed: TaskMetadata = JSON.parse(raw);
     console.log('[AI METADATA]', parsed);
 
     return parsed;
-  } catch (err: any) {
-    console.error('[AI FALLBACK]', err);
-    console.warn('[AI FALLBACK TRIGGERED]', err.message || err);
-    console.log('Test value:', Constants.expoConfig?.extra?.testValue);
-    return { estimatedBrewTime: 25, isPriority: false };
+  } catch (error) {
+    console.error('[AI FALLBACK]', error);
+    return {
+      estimatedBrewTime: 25,
+      isPriority: false,
+    };
   }
 };
+
+// import Constants from 'expo-constants';
+
+// export type TaskMetadata = {
+//   estimatedBrewTime: 15 | 25 | 45;
+//   isPriority: boolean;
+// };
+
+// export const getTaskMetadata = async (taskName: string): Promise<TaskMetadata> => {
+//   const OPENAI_API_KEY = Constants.expoConfig?.extra?.openaiKey;
+//   const ASSISTANT_ID = Constants.expoConfig?.extra?.openaiAssistantId;
+
+//   try {
+//     console.log('[TASK INPUT]', taskName);
+
+//     // Step 1: Create thread
+//     const threadRes = await fetch('https://api.openai.com/v1/threads', {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Bearer ${OPENAI_API_KEY}`,
+//         'Content-Type': 'application/json',
+//         'OpenAI-Beta': 'assistants=v2',
+//       },
+//     });
+
+//     const thread = await threadRes.json();
+//     console.log('[THREAD RESPONSE]', thread);
+
+//     const threadId = thread?.id;
+//     if (!threadId) throw new Error('Thread creation failed');
+
+//     // Step 2: Add message
+//     await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Bearer ${OPENAI_API_KEY}`,
+//         'Content-Type': 'application/json',
+//         'OpenAI-Beta': 'assistants=v2',
+//       },
+//       body: JSON.stringify({
+//         role: 'user',
+//         content: taskName,
+//       }),
+//     });
+
+//     // Step 3: Run assistant
+//     const runRes = await fetch(`https://api.openai.com/v1/threads/${threadId}/runs`, {
+//       method: 'POST',
+//       headers: {
+//         'Authorization': `Bearer ${OPENAI_API_KEY}`,
+//         'Content-Type': 'application/json',
+//         'OpenAI-Beta': 'assistants=v2',
+//       },
+//       body: JSON.stringify({
+//         assistant_id: ASSISTANT_ID,
+//       }),
+//     });
+
+//     const run = await runRes.json();
+//     const runId = run?.id;
+//     if (!runId) throw new Error('Run creation failed');
+
+//     // Step 4: Poll for completion
+//     let status = 'queued';
+//     let retries = 0;
+//     const maxRetries = 10;
+
+//     while (status !== 'completed' && retries < maxRetries) {
+//       const runCheckRes = await fetch(
+//         `https://api.openai.com/v1/threads/${threadId}/runs/${runId}`,
+//         {
+//           headers: {
+//             'Authorization': `Bearer ${OPENAI_API_KEY}`,
+//             'OpenAI-Beta': 'assistants=v2',
+//           },
+//         }
+//       );
+
+//       const runCheck = await runCheckRes.json();
+//       status = runCheck?.status || 'undefined';
+//       console.log('[ASSISTANT STATUS]', status);
+
+//       if (status !== 'completed') {
+//         await new Promise((res) => setTimeout(res, 1000));
+//         retries++;
+//       }
+//     }
+
+//     // Step 5: Get assistant message
+//     const messagesRes = await fetch(
+//       `https://api.openai.com/v1/threads/${threadId}/messages`,
+//       {
+//         headers: {
+//           'Authorization': `Bearer ${OPENAI_API_KEY}`,
+//           'OpenAI-Beta': 'assistants=v2',
+//         },
+//       }
+//     );
+
+//     const messagesData = await messagesRes.json();
+//     console.log('[MESSAGES RESPONSE]', messagesData);
+
+//     if (!messagesData?.data || messagesData.data.length === 0) {
+//       throw new Error('No assistant message found');
+//     }
+
+//     const assistantMessage = messagesData.data.find(
+//       (msg: any) => msg.role === 'assistant'
+//     );
+
+//     const rawContent = assistantMessage?.content?.[0]?.text?.value;
+//     console.log('[OPENAI RAW]', rawContent);
+
+//     if (!rawContent) throw new Error('No content in assistant response.');
+
+//     const parsed: TaskMetadata = JSON.parse(rawContent);
+//     console.log('[AI METADATA]', parsed);
+
+//     return parsed;
+//   } catch (err: any) {
+//     console.error('[AI FALLBACK]', err);
+//     console.warn('[AI FALLBACK TRIGGERED]', err.message || err);
+//     console.log('Test value:', Constants.expoConfig?.extra?.testValue);
+//     return { estimatedBrewTime: 25, isPriority: false };
+//   }
+// };
 
 // import Constants from 'expo-constants';
 
