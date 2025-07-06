@@ -18,11 +18,36 @@ export default function BrewBotScreen() {
   const [taskText, setTaskText] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  const addTask = async () => {
+//   const addTask = async () => {
+//   if (!taskText.trim()) return;
+
+//   try {
+//     const metadata = await getTaskMetadata(taskText); 
+
+//     const newTask: Task = {
+//       id: uuid.v4().toString(),
+//       taskName: taskText,
+//       estimatedBrewTime: metadata.estimatedBrewTime,
+//       isComplete: false,
+//       isPriority: metadata.isPriority,
+//       isTaskBrew: true,
+//     };
+
+//     setTasks((prev) => [...prev, newTask]);
+//     setTaskText('');
+//   } catch (error) {
+//     console.error('Failed to fetch metadata for task:', error);
+//   }
+// };
+
+const addTask = async () => {
   if (!taskText.trim()) return;
 
   try {
-    const metadata = await getTaskMetadata(taskText); 
+    console.log('[TASK INPUT]', taskText);
+    
+    const metadata = await getTaskMetadata(taskText); // ✅ wait for OpenAI response
+    console.log('[AI METADATA]', metadata);
 
     const newTask: Task = {
       id: uuid.v4().toString(),
@@ -36,9 +61,10 @@ export default function BrewBotScreen() {
     setTasks((prev) => [...prev, newTask]);
     setTaskText('');
   } catch (error) {
-    console.error('Failed to fetch metadata for task:', error);
+    console.error('[TASK ERROR]', error);
   }
 };
+
 
   const renderTask = ({ item }: { item: Task }) => (
     <View style={styles.taskRow}>
