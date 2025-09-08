@@ -46,7 +46,7 @@ export default function BrewSelectionScreen() {
                 </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.card} onPress={() => selectBrew('drip')}>
+            <TouchableOpacity style={styles.card} onPress={() => selectBrew('cold')}>
                 <View style={styles.iconWrapper}>
                     <Image
                     source={require('../assets/ui/cb.png')}
