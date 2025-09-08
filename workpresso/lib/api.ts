@@ -1,5 +1,5 @@
 // lib/api.ts
-const BACKEND_URL = 'https://6d6c-2a00-1d35-c82a-b100-f5f1-4d7a-782e-9427.ngrok-free.app';
+const BACKEND_URL = 'https://b19a5afb59b9.ngrok-free.app';
 export async function fetchTaskMetadata(task: string) {
   const response = await fetch(`${BACKEND_URL}/api/task-metadata`, {
     method: 'POST',

@@ -7,7 +7,7 @@ export type TaskMetadata = {
 };
 
 //const BACKEND_URL = 'http://192.168.1.20:3000';
-const BACKEND_URL = 'https://6d6c-2a00-1d35-c82a-b100-f5f1-4d7a-782e-9427.ngrok-free.app ';
+const BACKEND_URL = ' https://8c8d6422c31a.ngrok-free.app ';
 
 export const getTaskMetadata = async (
   taskName: string
